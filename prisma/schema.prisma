@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  storeId       String?
+  role          Role      @default(USERLV1)
+  accounts      Account[]
+  Profile       Profile?
+  sessions      Session[]
+  Store         Store?
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Category {
+  id       Int        @id @default(autoincrement())
+  name     String
+  Products Products[]
+}
+
+model ProductImage {
+  id         Int       @id @default(autoincrement())
+  imageUrl   String    @default("")
+  productsId Int?
+  Products   Products? @relation(fields: [productsId], references: [id])
+
+  @@unique([imageUrl])
+  @@index([productsId])
+}
+
+model Products {
+  id           Int            @id @default(autoincrement())
+  storeId      String
+  name         String
+  price        Decimal
+  type         String
+  description  String
+  categoryId   Int
+  ProductImage ProductImage[]
+  Category     Category       @relation(fields: [categoryId], references: [id])
+  Store        Store          @relation(fields: [storeId], references: [id])
+
+  @@index([categoryId])
+  @@index([storeId])
+}
+
+model Profile {
+  id         String    @id
+  DOB        DateTime?
+  department String?
+  faculty    String?
+  matricNo   Int?      @unique
+  telNo      Int?
+  userId     String    @unique
+  User       User      @relation(fields: [userId], references: [id])
+}
+
+model Store {
+  id            String     @id
+  storeOwnerId  String     @unique
+  name          String
+  verified      Boolean    @default(false)
+  storeLogo     String
+  createdAt     DateTime   @default(now())
+  description   String
+  physicalStore Boolean?   @default(false)
+  rating        Decimal    @default(0.00)
+  Products      Products[]
+  User          User       @relation(fields: [storeOwnerId], references: [id])
+}
+
+enum Role {
+  USERLV1
+  USERLV2
+  USERLV3
+  ADMIN
+}
